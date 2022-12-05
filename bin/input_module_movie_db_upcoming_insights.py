@@ -6,6 +6,8 @@ import sys
 import time
 import datetime
 
+import requests as req, json
+
 '''
     IMPORTANT
     Edit only the validate_input and collect_events functions.
@@ -24,7 +26,49 @@ def validate_input(helper, definition):
     # ssl_verify = definition.parameters.get('ssl_verify', None)
     pass
 
+def tmdb_api_call(requestURL, parameters):
+    response = req.get(url=requestURL, params=parameters)
+    if response.status_code != 200:
+        print(response.json())
+        exit()
+    data = response.json()
+    return data
+
+def get_upcoming_movie(base_url, api_key, page_num=1):
+    requestURL = f"https://{base_url}/upcoming"
+    parameters = {
+        "api_key": api_key,
+        "page": page_num
+    }
+
+    return tmdb_api_call(requestURL, parameters)
+
+def write_in_splunk(data, helper, ew):
+    event = helper.new_event(source=helper.get_input_type(), index=helper.get_output_index(), sourcetype=helper.get_sourcetype(), data=data)
+    ew.write_event(event)
+    
 def collect_events(helper, ew):
+    
+    
+    
+    opt_ssl_verify = helper.get_arg('ssl_verify')
+    api_key = helper.get_global_setting("api_key")
+    base_url = helper.get_global_setting("base_url")
+    
+    upcoming_movies = get_upcoming_movie(base_url, api_key, 1)
+    data = upcoming_movies.get('results',[])
+    
+    for movie in data:
+        movie["poster_path"] = "https://www.themoviedb.org/t/p/w440_and_h660_face/" + movie["poster_path"]
+        movie["backdrop_path"] = "https://www.themoviedb.org/t/p/w440_and_h660_face/" + movie["backdrop_path"]
+        
+        write_in_splunk(json.dumps(movie), helper, ew)
+    #for movie in data["results"]:
+    #    write_in_splunk(movie, helper, ew)
+    
+    
+    
+    
     """Implement your data collection logic here
 
     # The following examples get the arguments of this input.

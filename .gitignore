@@ -1,4 +1,5 @@
 local
+*/*.pyc
 *.pyc
 __pycache__
 *.pyo
