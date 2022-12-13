@@ -43,14 +43,16 @@ def get_upcoming_movie(base_url, api_key, page_num=1):
 
     return tmdb_api_call(requestURL, parameters)
 
+# Write to Splunk Index
 def write_in_splunk(data, helper, ew):
     event = helper.new_event(source=helper.get_input_type(), index=helper.get_output_index(), sourcetype=helper.get_sourcetype(), data=data)
     ew.write_event(event)
     
+# Primary Class
 def collect_events(helper, ew):
     
     
-    
+    # Inputs
     opt_ssl_verify = helper.get_arg('ssl_verify')
     api_key = helper.get_global_setting("api_key")
     base_url = helper.get_global_setting("base_url")
@@ -58,6 +60,7 @@ def collect_events(helper, ew):
     upcoming_movies = get_upcoming_movie(base_url, api_key, 1)
     data = upcoming_movies.get('results',[])
     
+    # Loop
     for movie in data:
         movie["poster_path"] = "https://www.themoviedb.org/t/p/w440_and_h660_face/" + movie["poster_path"]
         movie["backdrop_path"] = "https://www.themoviedb.org/t/p/w440_and_h660_face/" + movie["backdrop_path"]
